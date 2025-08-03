@@ -1,0 +1,23 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Node dependencies
+node_modules/
+dist/
+dist-new/
+
+# Electron-builder output
+release/
+build/
+
+# User-specific files
+.DS_Store
+.vscode/
+
+# Optional files
+.env

@@ -1,0 +1,19 @@
+{
+  "name": "decomp-dashboard",
+  "version": "1.0.0",
+  "description": "A dashboard to help with the Melee decompilation workflow.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "electron": "^25.0.0",
+    "electron-store": "7"
+  },
+  "devDependencies": {
+    "electron-builder": "^24.0.0"
+  }
+}

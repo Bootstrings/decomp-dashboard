@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Melee Decompilation Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .tab-button.active { border-color: #4f46e5; background-color: #eef2ff; color: #4338ca; }
+        .output-console { background-color: #1e293b; color: #e2e8f0; font-family: 'Courier New', Courier, monospace; padding: 1rem; border-radius: 0.5rem; height: 200px; overflow-y: scroll; white-space: pre-wrap; word-wrap: break-word; }
+        .output-console .log-time { color: #64748b; }
+        .output-console .log-info { color: #38bdf8; }
+        .output-console .log-success { color: #4ade80; }
+        .output-console .log-error { color: #f87171; }
+        .output-console .log-command { color: #facc15; }
+        .output-console .log-stdout { color: #e2e8f0; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        .custom-select-container { position: relative; }
+        .custom-select-value { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 0.375rem; background-color: white; cursor: pointer; }
+        .custom-select-options { position: absolute; top: 100%; left: 0; right: 0; background-color: white; border: 1px solid #d1d5db; border-top: none; border-radius: 0 0 0.375rem 0.375rem; max-height: 20rem; overflow-y: auto; z-index: 10; }
+        .custom-select-option { padding: 0.5rem; cursor: pointer; }
+        .custom-select-option:hover { background-color: #eef2ff; }
+        .vacant-count { color: #ef4444; font-weight: 600; }
+        .claimed-count { color: #22c55e; font-weight: 600; }
+        
+        #settings-button { position: absolute; top: 1rem; right: 1rem; cursor: pointer; padding: 0.5rem; border-radius: 9999px; }
+        #settings-button:hover { background-color: #e5e7eb; }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800">
+
+    <div class="container mx-auto p-4 md:p-8">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-slate-900">Melee Decompilation Dashboard</h1>
+            <p class="text-slate-600 mt-2">Your central hub for the matching decompilation workflow.</p>
+        </header>
+
+        <!-- Main Content Area -->
+        <div id="main-content">
+            <!-- Tabs -->
+            <div class="mb-6 border-b border-slate-300">
+                <nav class="flex space-x-4" aria-label="Tabs">
+                    <button id="tab-setup" class="tab-button active font-medium px-4 py-2 border-b-2 border-transparent hover:border-slate-400 transition">1. Project Setup</button>
+                    <button id="tab-recon" class="tab-button font-medium px-4 py-2 border-b-2 border-transparent hover:border-slate-400 transition" disabled>2. Reconnaissance & Decomp</button>
+                    <button id="tab-verify" class="tab-button font-medium px-4 py-2 border-b-2 border-transparent hover:border-slate-400 transition" disabled>3. Verification & Submission</button>
+                </nav>
+            </div>
+
+            <!-- Tab Content -->
+            <main>
+                <div id="content-setup">
+                    <div class="relative bg-white p-6 rounded-lg shadow-md">
+                        <button id="settings-button" title="Open Settings">
+                            <svg class="w-6 h-6 text-slate-600" fill="currentColor" viewBox="0 0 45.973 45.973" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M43.454,18.443h-2.437c-0.453-1.766-1.16-3.42-2.082-4.933l1.752-1.756c0.473-0.473,0.733-1.104,0.733-1.774
+                                    c0-0.669-0.262-1.301-0.733-1.773l-2.92-2.917c-0.947-0.948-2.602-0.947-3.545-0.001l-1.826,1.815
+                                    C30.9,6.232,29.296,5.56,27.529,5.128V2.52c0-1.383-1.105-2.52-2.488-2.52h-4.128c-1.383,0-2.471,1.137-2.471,2.52v2.607
+                                    c-1.766,0.431-3.38,1.104-4.878,1.977l-1.825-1.815c-0.946-0.948-2.602-0.947-3.551-0.001L5.27,8.205
+                                    C4.802,8.672,4.535,9.318,4.535,9.978c0,0.669,0.259,1.299,0.733,1.772l1.752,1.76c-0.921,1.513-1.629,3.167-2.081,4.933H2.501
+                                    C1.117,18.443,0,19.555,0,20.935v4.125c0,1.384,1.117,2.471,2.501,2.471h2.438c0.452,1.766,1.159,3.43,2.079,4.943l-1.752,1.763
+                                    c-0.474,0.473-0.734,1.106-0.734,1.776s0.261,1.303,0.734,1.776l2.92,2.919c0.474,0.473,1.103,0.733,1.772,0.733
+                                    s1.299-0.261,1.773-0.733l1.833-1.816c1.498,0.873,3.112,1.545,4.878,1.978v2.604c0,1.383,1.088,2.498,2.471,2.498h4.128
+                                    c1.383,0,2.488-1.115,2.488-2.498v-2.605c1.767-0.432,3.371-1.104,4.869-1.977l1.817,1.812c0.474,0.475,1.104,0.735,1.775,0.735
+                                    c0.67,0,1.301-0.261,1.774-0.733l2.92-2.917c0.473-0.472,0.732-1.103,0.734-1.772c0-0.67-0.262-1.299-0.734-1.773l-1.75-1.77
+                                    c0.92-1.514,1.627-3.179,2.08-4.943h2.438c1.383,0,2.52-1.087,2.52-2.471v-4.125C45.973,19.555,44.837,18.443,43.454,18.443z
+                                    M22.976,30.85c-4.378,0-7.928-3.517-7.928-7.852c0-4.338,3.55-7.85,7.928-7.85c4.379,0,7.931,3.512,7.931,7.85
+                                    C30.906,27.334,27.355,30.85,22.976,30.85z"/>
+                            </svg>
+                        </button>
+                        <h2 class="text-2xl font-semibold mb-4">Project Environment Setup</h2>
+                        <div class="space-y-6">
+                            <div>
+                                <h3 class="text-lg font-medium text-slate-800 mb-3">1. Select Project Paths</h3>
+                                <div class="space-y-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                                    <div>
+                                        <label for="project-folder" class="block text-sm font-medium text-slate-700 mb-1">Project Folder</label>
+                                        <div class="flex">
+                                            <input type="text" id="project-folder" class="flex-grow p-2 border border-slate-300 rounded-l-md" placeholder="Select the parent folder where the 'melee' project will be cloned" readonly>
+                                            <button id="select-folder-btn" class="bg-indigo-600 text-white px-4 py-2 rounded-r-md hover:bg-indigo-700">Select Folder</button>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label for="main-dol-path" class="block text-sm font-medium text-slate-700 mb-1">Path to main.dol</label>
+                                        <div class="flex">
+                                            <input type="text" id="main-dol-path" class="flex-grow p-2 border border-slate-300 rounded-l-md" placeholder="Select your legally extracted main.dol file" readonly>
+                                            <button id="select-file-btn" class="bg-indigo-600 text-white px-4 py-2 rounded-r-md hover:bg-indigo-700">Select File</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="pt-2">
+                                <button id="run-setup-btn" class="w-full bg-green-600 text-white px-4 py-3 rounded-md hover:bg-green-700 font-bold text-lg">2. Configure Environment & Run Setup</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="content-recon" class="hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h2 class="text-2xl font-semibold mb-4">Find a Target Function</h2>
+                            <div class="mb-4">
+                                <div class="flex justify-between items-center mb-1">
+                                    <label for="asm-file-select" class="block text-sm font-medium text-slate-700">Select Assembly File</label>
+                                    <div class="flex items-center">
+                                        <input id="hide-completed-checkbox" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" checked>
+                                        <label for="hide-completed-checkbox" class="ml-2 block text-sm text-gray-900">Hide Completed</label>
+                                    </div>
+                                </div>
+                                <div id="asm-file-select" class="custom-select-container">
+                                    <div class="custom-select-value" data-value="">
+                                        <span>-- Select project folder first --</span>
+                                        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                    </div>
+                                    <div class="custom-select-options hidden"></div>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <h3 class="font-semibold mb-2 text-red-600">Vacant Functions</h3>
+                                    <ul id="vacant-functions" class="h-96 overflow-y-auto border border-slate-200 rounded-md p-2 bg-slate-50">
+                                        <li class="text-slate-400 italic">Select an assembly file.</li>
+                                    </ul>
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold mb-2 text-green-600">Claimed/Done Functions</h3>
+                                    <ul id="claimed-functions" class="h-96 overflow-y-auto border border-slate-200 rounded-md p-2 bg-slate-50">
+                                        <li class="text-slate-400 italic">Select an assembly file.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h2 class="text-2xl font-semibold mb-4">decomp.me Scratch Pad</h2>
+                            <div class="space-y-4">
+                                <div>
+                                    <h3 class="font-semibold">Selected Target (Diff label):</h3>
+                                    <div class="flex items-center space-x-2">
+                                        <p id="selected-target" class="flex-grow p-2 border border-slate-300 rounded-md bg-slate-100 font-mono">None</p>
+                                        <button id="check-decomp-me-btn" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700" disabled>Check</button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold">Target Assembly</h3>
+                                    <p class="text-sm text-slate-500 mb-2">This is automatically extracted for your selected function.</p>
+                                    <textarea id="target-assembly-box" rows="8" class="w-full p-2 border border-slate-300 rounded-md bg-slate-50 font-mono text-sm" placeholder="Select a vacant function to populate this..." readonly></textarea>
+                                    <button id="copy-assembly-btn" class="w-full mt-2 bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">Copy Assembly</button>
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold">Context</h3>
+                                    <p class="text-sm text-slate-500 mb-2">This is automatically generated from the C file.</p>
+                                    <textarea id="context-box" rows="5" class="w-full p-2 border border-slate-300 rounded-md bg-slate-50 font-mono text-sm" placeholder="Select a file to populate this..." readonly></textarea>
+                                    <button id="copy-context-btn" class="w-full mt-2 bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">Copy Context</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="content-verify" class="hidden">
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h2 class="text-2xl font-semibold mb-4">Local Verification & Submission</h2>
+                        <p class="text-slate-600 mb-6">Once you have a 100% match on decomp.me, paste your C code here to verify it locally and submit your work.</p>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div>
+                                <label for="matched-code" class="block text-sm font-medium text-slate-700 mb-1">Paste Your Matched C Code Here</label>
+                                <textarea id="matched-code" rows="10" class="w-full p-2 border border-slate-300 rounded-md font-mono text-sm" placeholder="void un_8031XXXX(void) { /* ... */ }"></textarea>
+                                <button id="inject-code-btn" class="w-full mt-2 bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">Inject Code & Add to Header</button>
+                                <button id="run-ninja-btn" class="w-full mt-2 bg-green-600 text-white px-4 py-3 rounded-md hover:bg-green-700 font-bold">Run `ninja` to Verify</button>
+                            </div>
+                            <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                                <h3 class="font-semibold mb-2">Submission</h3>
+                                <p class="text-sm text-slate-600 mb-4">After a successful local build, open an issue on GitHub.</p>
+                                <div class="mb-4">
+                                    <label for="decomp-me-link" class="block text-sm font-medium text-slate-700 mb-1">Link to your decomp.me Scratch</label>
+                                    <input type="text" id="decomp-me-link" class="w-full p-2 border border-slate-300 rounded-md" placeholder="https://decomp.me/scratch/...">
+                                </div>
+                                <button id="submit-github-btn" class="w-full bg-slate-800 text-white px-4 py-2 rounded-md hover:bg-slate-900">Open GitHub Issue</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- Settings Page -->
+        <div id="settings-page" class="hidden">
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-2xl font-semibold mb-4">Toolchain Configuration</h2>
+                <p class="text-slate-600 mb-6">Manually specify paths to executables if auto-detection fails. The application will prioritize these paths.</p>
+                <div class="space-y-4">
+                    <div>
+                        <label for="settings-python-path" class="block text-sm font-medium text-slate-700 mb-1">Path to python.exe</label>
+                        <div class="flex">
+                            <input type="text" id="settings-python-path" class="flex-grow p-2 border border-slate-300 rounded-l-md" placeholder="e.g., C:\Python39\python.exe" readonly>
+                            <button data-target-input="settings-python-path" data-filter-name="Python" data-filter-ext="exe" class="browse-exe-btn bg-indigo-600 text-white px-4 py-2 rounded-r-md hover:bg-indigo-700">Browse</button>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="settings-git-path" class="block text-sm font-medium text-slate-700 mb-1">Path to git.exe</label>
+                        <div class="flex">
+                            <input type="text" id="settings-git-path" class="flex-grow p-2 border border-slate-300 rounded-l-md" placeholder="e.g., C:\Program Files\Git\bin\git.exe" readonly>
+                            <button data-target-input="settings-git-path" data-filter-name="Git" data-filter-ext="exe" class="browse-exe-btn bg-indigo-600 text-white px-4 py-2 rounded-r-md hover:bg-indigo-700">Browse</button>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="settings-ninja-path" class="block text-sm font-medium text-slate-700 mb-1">Path to ninja.exe</label>
+                        <div class="flex">
+                            <input type="text" id="settings-ninja-path" class="flex-grow p-2 border border-slate-300 rounded-l-md" placeholder="e.g., C:\Python39\Scripts\ninja.exe" readonly>
+                            <button data-target-input="settings-ninja-path" data-filter-name="Ninja" data-filter-ext="exe" class="browse-exe-btn bg-indigo-600 text-white px-4 py-2 rounded-r-md hover:bg-indigo-700">Browse</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-6 flex items-center space-x-4">
+                    <button id="save-settings-btn" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 font-semibold">Save Settings</button>
+                    <button id="back-to-setup-btn" class="bg-slate-200 text-slate-800 px-4 py-2 rounded-md hover:bg-slate-300">Back to Setup</button>
+                </div>
+            </div>
+        </div>
+
+        <footer class="mt-8">
+            <h3 class="text-xl font-semibold mb-2">Output Log</h3>
+            <div id="output-console" class="output-console"></div>
+        </footer>
+    </div>
+
+          
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const consoleLog = document.getElementById('output-console');
+        let projectPath = '';
+        let sessionEnvForVerification = {}; 
+
+        function logMessage(message, type = 'info') {
+            const time = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            const textNode = document.createTextNode(message);
+            const messageSpan = document.createElement('span');
+            messageSpan.className = `log-${type}`;
+            messageSpan.appendChild(textNode);
+            logEntry.innerHTML = `<span class="log-time">[${time}] </span>`;
+            logEntry.appendChild(messageSpan);
+            consoleLog.appendChild(logEntry);
+            consoleLog.scrollTop = consoleLog.scrollHeight;
+        }
+        
+        async function setupApplication() {
+            // Main Views
+            const mainContent = document.getElementById('main-content');
+            const settingsPage = document.getElementById('settings-page');
+
+            // --- NEW --- Load user paths at startup
+            async function loadUserPaths() {
+                const paths = await window.electronAPI.getPaths();
+                if (paths.projectPath) {
+                    projectPath = paths.projectPath;
+                    document.getElementById('project-folder').value = projectPath;
+                    logMessage(`Loaded saved project folder: ${projectPath}`);
+                }
+                if (paths.dolPath) {
+                    document.getElementById('main-dol-path').value = paths.dolPath;
+                    logMessage(`Loaded saved main.dol path: ${paths.dolPath}`);
+                }
+            }
+            await loadUserPaths(); // Run this first
+
+            function showTab(tabName) {
+                ['setup', 'recon', 'verify'].forEach(id => {
+                    document.getElementById(`content-${id}`).classList.add('hidden');
+                    document.getElementById(`tab-${id}`).classList.remove('active');
+                });
+                document.getElementById(`content-${tabName}`).classList.remove('hidden');
+                document.getElementById(`tab-${tabName}`).classList.add('active');
+            }
+            
+            async function showSettingsPage() {
+                mainContent.classList.add('hidden');
+                settingsPage.classList.remove('hidden');
+                await loadSettings();
+            }
+
+            function showMainContent() {
+                settingsPage.classList.add('hidden');
+                mainContent.classList.remove('hidden');
+            }
+            
+            async function loadSettings() {
+                logMessage('Loading settings and auto-detecting tool paths...');
+                const settings = await window.electronAPI.getSettings();
+                document.getElementById('settings-python-path').value = settings.python || '';
+                document.getElementById('settings-git-path').value = settings.git || '';
+                document.getElementById('settings-ninja-path').value = settings.ninja || '';
+                logMessage('Settings loaded.');
+            }
+
+            async function saveSettings() {
+                const settings = {
+                    python: document.getElementById('settings-python-path').value,
+                    git: document.getElementById('settings-git-path').value,
+                    ninja: document.getElementById('settings-ninja-path').value
+                };
+                await window.electronAPI.setSettings(settings);
+                logMessage('Settings saved successfully. They will be used on the next run.', 'success');
+                showMainContent();
+            }
+
+            async function browseForExecutable(event) {
+                const button = event.currentTarget;
+                const targetInputId = button.dataset.targetInput;
+                const filterName = button.dataset.filterName;
+                const filterExt = button.dataset.filterExt;
+                
+                const filePath = await window.electronAPI.selectFile({
+                    filters: [{ name: filterName, extensions: [filterExt] }]
+                });
+
+                if (filePath) {
+                    document.getElementById(targetInputId).value = filePath;
+                }
+            }
+
+            function enableTabs() {
+                document.getElementById('tab-recon').disabled = false;
+                document.getElementById('tab-verify').disabled = false;
+            }
+
+            async function selectProjectFolder() {
+                const selectedPath = await window.electronAPI.selectDirectory();
+                if (selectedPath) {
+                    projectPath = selectedPath;
+                    document.getElementById('project-folder').value = projectPath;
+                    logMessage(`Project folder set to: ${projectPath}`, 'success');
+                    // --- NEW --- Save the path
+                    await window.electronAPI.setPaths({ projectPath: projectPath });
+                }
+            }
+
+            async function selectMainDolFile() {
+                const filePath = await window.electronAPI.selectFile({
+                    filters: [{ name: 'DOL Files', extensions: ['dol'] }]
+                });
+                if (filePath) {
+                    document.getElementById('main-dol-path').value = filePath;
+                    logMessage(`Selected main.dol: ${filePath}`, 'success');
+                    // --- NEW --- Save the path
+                    await window.electronAPI.setPaths({ dolPath: filePath });
+                }
+            }
+
+            async function runInitialSetup() {
+                const dolPath = document.getElementById('main-dol-path').value;
+                if (!projectPath || !dolPath) {
+                    logMessage("Please select a project folder and main.dol path first.", "error");
+                    return;
+                }
+
+                const runSetupBtn = document.getElementById('run-setup-btn');
+                runSetupBtn.disabled = true;
+                runSetupBtn.textContent = 'Setting up... Please wait.';
+
+                try {
+                    logMessage("--- Starting Automated Setup ---", "info");
+                    const result = await window.electronAPI.runProjectSetup({ projectPath, dolPath });
+
+                    if (result.success) {
+                        logMessage("--- Project Setup Finished Successfully! ---", "success");
+                        sessionEnvForVerification = result.env;
+                        await populateAsmFiles();
+                        enableTabs();
+                        showTab('recon');
+                    } else {
+                        logMessage(`--- Setup failed. ${result.error} ---`, "error");
+                    }
+                } catch (error) {
+                    logMessage(`A critical error occurred: ${error.message}`, "error");
+                } finally {
+                    runSetupBtn.disabled = false;
+                    runSetupBtn.textContent = '2. Configure Environment & Run Setup';
+                }
+            }
+
+            async function populateAsmFiles() {
+                const selectContainer = document.getElementById('asm-file-select');
+                const selectValue = selectContainer.querySelector('.custom-select-value');
+                const optionsContainer = selectContainer.querySelector('.custom-select-options');
+                const hideCompleted = document.getElementById('hide-completed-checkbox').checked;
+                
+                if (!projectPath) return;
+                
+                logMessage('Fetching and filtering assembly file list...');
+                const result = await window.electronAPI.getAsmFiles({ projectPath, hideCompleted });
+                
+                optionsContainer.innerHTML = '';
+                selectValue.dataset.value = '';
+                selectValue.querySelector('span').textContent = '-- Select a file to analyze --';
+
+                if (result.error) {
+                    logMessage(`Error fetching files: ${result.error}`, 'error');
+                    selectValue.querySelector('span').textContent = '-- Error loading files --';
+                } else if (result.files) {
+                    result.files.forEach(fileData => {
+                        const option = document.createElement('div');
+                        option.classList.add('custom-select-option');
+                        option.dataset.value = fileData.path;
+                        
+                        const vacantClass = fileData.vacant === 0 ? 'claimed-count' : 'vacant-count';
+                        option.innerHTML = `${fileData.path} (<span class="${vacantClass}">${fileData.vacant}</span>/<span class="claimed-count">${fileData.claimed}</span>)`;
+                        
+                        option.addEventListener('click', () => {
+                            selectValue.querySelector('span').innerHTML = option.innerHTML;
+                            selectValue.dataset.value = fileData.path;
+                            optionsContainer.classList.add('hidden');
+                            findVacantFunctions();
+                        });
+                        optionsContainer.appendChild(option);
+                    });
+                    logMessage(`Found ${result.files.length} files.`, 'success');
+                }
+            }
+
+            async function findVacantFunctions() {
+                const selectedFile = document.querySelector('#asm-file-select .custom-select-value').dataset.value;
+                if (!selectedFile) return;
+
+                const vacantList = document.getElementById('vacant-functions');
+                const claimedList = document.getElementById('claimed-functions');
+                vacantList.innerHTML = '';
+                claimedList.innerHTML = '';
+                document.getElementById('context-box').value = '';
+                document.getElementById('target-assembly-box').value = '';
+                document.getElementById('selected-target').textContent = 'None';
+                document.getElementById('check-decomp-me-btn').disabled = true;
+
+                logMessage(`Analyzing ${selectedFile}...`);
+                const result = await window.electronAPI.analyzeFiles({ projectPath, relativePath: selectedFile });
+
+                if (result.error) {
+                    logMessage(`Error analyzing file: ${result.error}`, 'error');
+                    return;
+                }
+
+                result.vacant.forEach(func => {
+                    const li = document.createElement('li');
+                    li.textContent = `${func.name} (${func.size} lines)`;
+                    li.className = 'p-1 hover:bg-indigo-100 rounded cursor-pointer font-mono text-sm';
+                    li.onclick = () => selectTarget(func.name);
+                    vacantList.appendChild(li);
+                });
+                if (result.vacant.length === 0) vacantList.innerHTML = '<li class="text-slate-400 italic">No vacant functions found.</li>';
+                
+                result.claimed.forEach(funcName => {
+                    const li = document.createElement('li');
+                    li.textContent = funcName;
+                    li.className = 'p-1 bg-green-50 rounded font-mono text-sm text-slate-500';
+                    claimedList.appendChild(li);
+                });
+                if (result.claimed.length === 0) claimedList.innerHTML = '<li class="text-slate-400 italic">No claimed functions found.</li>';
+                
+                document.getElementById('context-box').value = result.includes;
+                logMessage(`Analysis complete. Found ${result.vacant.length} vacant functions.`, 'success');
+            }
+            
+            async function selectTarget(funcName) {
+                logMessage(`Selected target: ${funcName}`);
+                document.getElementById('selected-target').textContent = funcName;
+                document.getElementById('check-decomp-me-btn').disabled = false;
+
+                const selectedFile = document.querySelector('#asm-file-select .custom-select-value').dataset.value;
+                const result = await window.electronAPI.getFunctionAsm({ projectPath, relativePath: selectedFile, functionName: funcName });
+                
+                const targetAssemblyBox = document.getElementById('target-assembly-box');
+                if (result.error) {
+                    logMessage(`Error fetching assembly for ${funcName}: ${result.error}`, 'error');
+                    targetAssemblyBox.value = `Error: ${result.error}`;
+                } else {
+                    targetAssemblyBox.value = result.asm;
+                    logMessage(`Successfully loaded assembly for ${funcName}.`, 'success');
+                }
+            }
+
+            async function runNinjaVerification() {
+                if (!projectPath) {
+                    logMessage("Project path not set. Please complete setup first.", "error");
+                    return;
+                }
+                logMessage("--- Running local verification build ---", "info");
+                const meleePath = projectPath + '\\melee'; // Simple path join
+                await window.electronAPI.execCommand('ninja', meleePath, sessionEnvForVerification);
+            }
+
+            async function injectCode() {
+                const code = document.getElementById('matched-code').value;
+                const file = document.querySelector('#asm-file-select .custom-select-value').dataset.value;
+                if (!code || !file || !projectPath) {
+                    logMessage("Please select a project folder, a file, and paste your code first.", "error");
+                    return;
+                }
+                logMessage(`Injecting code into C/H files for ${file}...`);
+                const result = await window.electronAPI.injectCode({ projectPath, relativePath: file, code });
+                if (result.success) logMessage("Code injected successfully.", "success");
+                else logMessage(`Error injecting code: ${result.error}`, "error");
+            }
+
+            function submitToGithub() {
+                const link = document.getElementById('decomp-me-link').value;
+                const target = document.getElementById('selected-target').textContent;
+                if (!link) {
+                    logMessage("Please enter the link to your decomp.me scratch.", "error");
+                    return;
+                }
+                const file = document.querySelector('#asm-file-select .custom-select-value').dataset.value;
+                const title = `Match: ${target || 'un_function_name'} in ${file.replace('.s', '.c')}`;
+                const body = `Link to matching scratch: ${link}`;
+                window.electronAPI.openExternal(`https://github.com/doldecomp/melee/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`);
+            }
+
+            function copyToClipboard(elementId) {
+                const textarea = document.getElementById(elementId);
+                textarea.select();
+                document.execCommand('copy');
+                logMessage(`Copied content from ${elementId} to clipboard!`, 'success');
+            }
+
+            window.electronAPI.onLogMessage(data => {
+                const message = data.trim();
+                if (!message) return;
+                if (message.startsWith('Executing:')) logMessage(message, 'command');
+                else if (message.toLowerCase().includes('success') || message.toLowerCase().includes('is available') || message.toLowerCase().includes('found')) logMessage(message, 'success');
+                else logMessage(message, 'stdout');
+            });
+            window.electronAPI.onLogError(data => logMessage(data.trim(), 'error'));
+
+            // -- Event Listeners --
+            document.getElementById('tab-setup').addEventListener('click', () => showTab('setup'));
+            document.getElementById('tab-recon').addEventListener('click', () => showTab('recon'));
+            document.getElementById('tab-verify').addEventListener('click', () => showTab('verify'));
+            document.getElementById('settings-button').addEventListener('click', showSettingsPage);
+            document.getElementById('back-to-setup-btn').addEventListener('click', showMainContent);
+            document.getElementById('save-settings-btn').addEventListener('click', saveSettings);
+            document.querySelectorAll('.browse-exe-btn').forEach(btn => btn.addEventListener('click', browseForExecutable));
+            document.getElementById('select-folder-btn').addEventListener('click', selectProjectFolder);
+            document.getElementById('select-file-btn').addEventListener('click', selectMainDolFile);
+            document.getElementById('run-setup-btn').addEventListener('click', runInitialSetup);
+            document.getElementById('hide-completed-checkbox').addEventListener('change', populateAsmFiles);
+            document.getElementById('check-decomp-me-btn').addEventListener('click', () => window.electronAPI.openExternal(`https://decomp.me/?q=${document.getElementById('selected-target').textContent}`));
+            document.getElementById('copy-assembly-btn').addEventListener('click', () => copyToClipboard('target-assembly-box'));
+            document.getElementById('copy-context-btn').addEventListener('click', () => copyToClipboard('context-box'));
+            document.getElementById('inject-code-btn').addEventListener('click', injectCode);
+            document.getElementById('run-ninja-btn').addEventListener('click', runNinjaVerification);
+            document.getElementById('submit-github-btn').addEventListener('click', submitToGithub);
+            
+            const selectContainer = document.getElementById('asm-file-select');
+            const selectValue = selectContainer.querySelector('.custom-select-value');
+            const optionsContainer = selectContainer.querySelector('.custom-select-options');
+            selectValue.addEventListener('click', () => optionsContainer.classList.toggle('hidden'));
+            document.addEventListener('click', (e) => {
+                if (!selectContainer.contains(e.target)) {
+                    optionsContainer.classList.add('hidden');
+                }
+            });
+            
+            logMessage("Application initialized successfully.");
+        }
+        
+        setupApplication();
+    });
+</script>
+    
+
+    
+</body>
+</html>

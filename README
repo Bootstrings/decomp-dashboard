@@ -1,0 +1,120 @@
+## PROJECT OVERVIEW
+
+This project is an Electron-based desktop application designed to streamline the workflow for contributing to the `melee` game decompilation project. It serves as a helper tool that guides a developer through the entire process, from initial environment setup to local verification and final submission.
+
+The dashboard simplifies complex command-line tasks into a user-friendly graphical interface.
+
+**Core Features:**
+
+*   **Guided Setup:** Automates the process of cloning the `melee` repository, locating a `main.dol` file, configuring the project with `configure.py`, and running the initial `ninja` build.
+*   **Toolchain Verification:** Automatically detects if Git and Python are installed and configured on the system's `PATH`. The tool can also install `ninja` via pip if it's missing.
+*   **Manual Configuration:** Provides a settings page to manually specify paths for `git.exe`, `python.exe`, and `ninja.exe`, overriding auto-detection for non-standard environments.
+*   **Reconnaissance View:** Scans the project's assembly files to identify "vacant" (un-decompiled) and "claimed" (decompiled) functions, helping users quickly find a target to work on.
+*   **Decompilation Helper:** For a selected function, it automatically extracts the relevant assembly code and C header context, ready to be copied into [decomp.me](https://decomp.me).
+*   **Local Verification:** Allows users to paste their matched C code, which the application then injects into the correct source and header files, and provides a one-click button to run `ninja` and verify the build.
+*   **GitHub Integration:** Simplifies submission by pre-filling a GitHub issue with the relevant function and file information.
+
+## FILE STRUCTURE
+
+```
+decomp-dashboard/
+├── src/
+│   ├── index.html
+│   └── preload.js
+├── .gitignore
+├── main.js
+├── package.json
+├── package-lock.json
+└── README.md
+```
+
+## GETTING STARTED
+
+Follow these instructions to get a copy of the project up and running on your local machine for development and testing purposes.
+
+### Prerequisites
+
+*   [Node.js](https://nodejs.org/) and npm
+*   [Git](https://git-scm.com/)
+*   [Python](https://www.python.org/)
+
+### Installation
+
+1.  Clone the repository to your local machine:
+    ```sh
+    git clone <YOUR_REPOSITORY_URL>
+    cd decomp-dashboard
+    ```
+
+2.  Install the required npm packages:
+    ```sh
+    npm install
+    ```
+    This will install all necessary dependencies listed in `package.json`, including `electron-store`.
+
+### Running the Application
+
+To start the application in development mode, run the following command:
+
+```sh
+npm start
+```
+
+This will launch the Electron window and the application.
+
+## CONFIGURATION
+
+This application is designed to automatically detect required tools (Git, Python) from your system's PATH. For users with non-standard installations, manual configuration is available via a settings page.
+
+### Automatic Detection
+On first run, the application searches the system PATH for `git.exe` and `py.exe`. If `ninja.exe` is not found, it will attempt to install it via `pip`. Any successfully found paths are automatically saved for future sessions.
+
+### Manual Configuration
+You can access the manual configuration page by clicking the gear icon on the "Project Setup" tab. This allows you to specify the exact path to the following executables:
+- `python.exe`
+- `git.exe`
+- `ninja.exe`
+
+Manually set paths will always take precedence over auto-detected ones.
+
+### Settings Storage
+Configuration settings are automatically saved to your operating system's standard user data directory in a `config.json` file. This is handled by the `electron-store` package, so you do not need to create a `.env` file.
+
+## KEY PACKAGES
+
+*   **`electron`**: The core framework used to build this cross-platform desktop application.
+*   **`electron-store@7`**: Used to persistently store user settings, such as manually configured paths for the toolchain executables. Version 7 is used for compatibility with the project's CommonJS module system.
+*   **`electron-builder`** (dev dependency): A tool for packaging and distributing the Electron application as an executable file (e.g., `.exe`, `.dmg`).
+*   **Node.js `child_process`**: Used to execute external command-line tools like `git`, `py`, and `ninja`.
+*   **Node.js `fs` and `path`**: Used for all file system interactions.
+*   **`tailwindcss`**: A utility-first CSS framework loaded via CDN to style the user interface.
+
+## SECURITY NOTES
+
+Security is a primary consideration, especially in an application that interacts with the file system and executes shell commands.
+
+*   **Context Isolation**: The application is configured with `contextIsolation: true` and `nodeIntegration: false`. This is a critical security measure in Electron that ensures the renderer process (the UI) cannot directly access Node.js APIs.
+*   **Preload Script**: Communication between the UI and the backend is handled exclusively through a `preload.js` script, which uses `contextBridge` to securely expose specific backend functions to the UI.
+*   **Command Execution**: The application executes shell commands based on hardcoded templates. Any user-provided data (like file paths) is supplied via secure system dialogs, mitigating the risk of command injection attacks.
+
+## DEPLOYMENT NOTES
+
+To package this Electron application into a distributable format (e.g., `.exe` for Windows), use the `build` script in `package.json`.
+
+1.  Ensure `electron-builder` is installed:
+    ```sh
+    npm install electron-builder --save-dev
+    ```
+
+2.  Run the build process:
+    ```sh
+    npm run build
+    ```
+    This will generate a `dist/` folder containing the packaged application.
+
+## TESTING
+
+Currently, no formal tests have been written for this project. For a production-ready application, you should consider adding both unit and end-to-end tests.
+
+*   **Unit Testing (Main Process)**: Use a framework like [Jest](https://jestjs.io/) or [Mocha](https://mochajs.org/) to test the backend logic in `main.js`.
+*   **End-to-End Testing (UI)**: Use a framework like [Playwright for Electron](https://playwright.dev/docs/electron) to automate and test the application's user interface.
