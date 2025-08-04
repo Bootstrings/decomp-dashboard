@@ -15,5 +15,25 @@
   "devDependencies": {
     "electron": "^25.0.0",
     "electron-builder": "^24.0.0"
+  },
+  "build": {
+    "appId": "com.example.decomp-dashboard",
+    "productName": "Decomp Dashboard",
+    "files": [
+      "**/*"
+    ],
+    "directories": {
+      "buildResources": "assets",
+      "output": "dist"
+    },
+    "win": {
+      "icon": "assets/icon.png"
+    },
+    "mac": {
+      "icon": "assets/icon.png"
+    },
+    "linux": {
+      "icon": "assets/icon.png"
+    }
   }
 }

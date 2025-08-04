@@ -14,6 +14,7 @@ const createWindow = () => {
   const win = new BrowserWindow({
     width: 1200,
     height: 900,
+    icon: path.join(__dirname, 'assets/icon.png'), // <-- ADDED THIS LINE
     webPreferences: {
       preload: path.join(__dirname, 'src/preload.js'),
       contextIsolation: true,
@@ -26,6 +27,7 @@ const createWindow = () => {
 };
 
 app.whenReady().then(createWindow);
+// ... (rest of the file is unchanged) ...
 app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
 
@@ -456,7 +458,6 @@ ipcMain.handle('files:injectCode', async(event, { projectPath, relativePath, cod
             event.sender.send('log:message', `Created ${path.basename(hPath)} with signature for ${functionName}.`);
         } else {
             let hContent = fs.readFileSync(hPath, 'utf-8');
-            // UPDATED REGEX: Anchors to start of line (^), searches for the function name, and uses multiline flag (m).
             const oldSignatureRegex = new RegExp(`^.*\\b${functionName}\\b\\s*\\([^)]*\\);`, 'gm');
             
             if (oldSignatureRegex.test(hContent)) {
