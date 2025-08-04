@@ -36,6 +36,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   analyzeFiles: (args) => ipcRenderer.invoke('files:analyze', args),
   getFunctionAsm: (args) => ipcRenderer.invoke('files:getFunctionAsm', args),
   injectCode: (args) => ipcRenderer.invoke('files:injectCode', args),
+  revertChanges: (args) => ipcRenderer.invoke('files:revertChanges', args), // <-- ADDED THIS LINE
 
   // --- Cleanup ---
   removeAllListeners: (channel) => ipcRenderer.removeAllListeners(channel),

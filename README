@@ -7,12 +7,15 @@ The dashboard simplifies complex command-line tasks into a user-friendly graphic
 **Core Features:**
 
 *   **Guided Setup:** Automates the process of cloning the `melee` repository, locating a `main.dol` file, configuring the project with `configure.py`, and running the initial `ninja` build.
+*   **Persistent Paths:** Remembers the user's selected Project Folder and `main.dol` path between sessions for convenience.
 *   **Toolchain Verification:** Automatically detects if Git and Python are installed and configured on the system's `PATH`. The tool can also install `ninja` via pip if it's missing.
-*   **Manual Configuration:** Provides a settings page to manually specify paths for `git.exe`, `python.exe`, and `ninja.exe`, overriding auto-detection for non-standard environments.
+*   **Manual Configuration:** Provides a settings page to manually specify paths for `git.exe`, `python.exe`, and `ninja.exe`, overriding auto-detection for non-standard environments. Found paths are displayed for user verification.
 *   **Reconnaissance View:** Scans the project's assembly files to identify "vacant" (un-decompiled) and "claimed" (decompiled) functions, helping users quickly find a target to work on.
 *   **Decompilation Helper:** For a selected function, it automatically extracts the relevant assembly code and C header context, ready to be copied into [decomp.me](https://decomp.me).
-*   **Local Verification:** Allows users to paste their matched C code, which the application then injects into the correct source and header files, and provides a one-click button to run `ninja` and verify the build.
-*   **GitHub Integration:** Simplifies submission by pre-filling a GitHub issue with the relevant function and file information.
+*   **Intelligent Code Injection:** Allows users to paste their matched C code. The application intelligently finds and replaces the corresponding function stub in both the C source file and the header file, preventing common redeclaration errors.
+*   **One-Click Revert:** A dedicated button to revert any code injections for the currently selected file. This uses `git restore` to safely return the source files to their original, unmodified state.
+*   **Local Verification & Submission:** Provides one-click buttons to run `ninja` to verify a local build and to pre-fill a GitHub issue for submitting a matched function.
+*   **Quick Access Links:** Persistent icons on the dashboard provide one-click access to the Melee Decompilation GitHub repository and the decomp.me website.
 
 ## FILE STRUCTURE
 
@@ -22,6 +25,7 @@ decomp-dashboard/
 │   ├── index.html
 │   └── preload.js
 ├── .gitignore
+├── LICENSE
 ├── main.js
 ├── package.json
 ├── package-lock.json
@@ -50,7 +54,7 @@ Follow these instructions to get a copy of the project up and running on your lo
     ```sh
     npm install
     ```
-    This will install all necessary dependencies listed in `package.json`, including `electron-store`.
+    This will install all necessary dependencies listed in `package.json`.
 
 ### Running the Application
 
@@ -62,32 +66,17 @@ npm start
 
 This will launch the Electron window and the application.
 
-## CONFIGURATION
+## ENVIRONMENT VARIABLES
 
-This application is designed to automatically detect required tools (Git, Python) from your system's PATH. For users with non-standard installations, manual configuration is available via a settings page.
-
-### Automatic Detection
-On first run, the application searches the system PATH for `git.exe` and `py.exe`. If `ninja.exe` is not found, it will attempt to install it via `pip`. Any successfully found paths are automatically saved for future sessions.
-
-### Manual Configuration
-You can access the manual configuration page by clicking the gear icon on the "Project Setup" tab. This allows you to specify the exact path to the following executables:
-- `python.exe`
-- `git.exe`
-- `ninja.exe`
-
-Manually set paths will always take precedence over auto-detected ones.
-
-### Settings Storage
-Configuration settings are automatically saved to your operating system's standard user data directory in a `config.json` file. This is handled by the `electron-store` package, so you do not need to create a `.env` file.
+This application uses `electron-store` to persistently save user settings, eliminating the need for a `.env` file. Configuration is handled automatically and can be manually overridden via the application's Settings page.
 
 ## KEY PACKAGES
 
-*   **`electron`**: The core framework used to build this cross-platform desktop application.
-*   **`electron-store@7`**: Used to persistently store user settings, such as manually configured paths for the toolchain executables. Version 7 is used for compatibility with the project's CommonJS module system.
+*   **`electron`** (dev dependency): The core framework used to build this cross-platform desktop application. It must be in `devDependencies` to ensure it is not bundled into the final distributable application.
+*   **`electron-store@7`**: Used to persistently store user settings, such as manually configured paths for the toolchain and last-used project paths. Version 7 is used for compatibility with the project's CommonJS module system.
 *   **`electron-builder`** (dev dependency): A tool for packaging and distributing the Electron application as an executable file (e.g., `.exe`, `.dmg`).
 *   **Node.js `child_process`**: Used to execute external command-line tools like `git`, `py`, and `ninja`.
 *   **Node.js `fs` and `path`**: Used for all file system interactions.
-*   **`tailwindcss`**: A utility-first CSS framework loaded via CDN to style the user interface.
 
 ## SECURITY NOTES
 
@@ -101,20 +90,18 @@ Security is a primary consideration, especially in an application that interacts
 
 To package this Electron application into a distributable format (e.g., `.exe` for Windows), use the `build` script in `package.json`.
 
-1.  Ensure `electron-builder` is installed:
-    ```sh
-    npm install electron-builder --save-dev
-    ```
-
-2.  Run the build process:
+1.  Ensure all dependencies are correctly installed by running `npm install`.
+2.  Confirm that the `electron` package is listed under `devDependencies` in `package.json`, not `dependencies`.
+3.  Run the build process:
     ```sh
     npm run build
     ```
-    This will generate a `dist/` folder containing the packaged application.
+    This will generate a `dist/` folder containing the packaged application. On Windows, you may need to run this command from a terminal with **Administrator privileges** to avoid errors related to creating symbolic links.
 
 ## TESTING
 
 Currently, no formal tests have been written for this project. For a production-ready application, you should consider adding both unit and end-to-end tests.
 
-*   **Unit Testing (Main Process)**: Use a framework like [Jest](https://jestjs.io/) or [Mocha](https://mochajs.org/) to test the backend logic in `main.js`.
-*   **End-to-End Testing (UI)**: Use a framework like [Playwright for Electron](https://playwright.dev/docs/electron) to automate and test the application's user interface.
+Manual testing should be performed on core features after any change, including:
+*   Verifying that the "Inject Code" button correctly replaces function stubs in both `.c` and `.h` files.
+*   Confirming that the "Revert Changes" button restores the `.c` and `.h` files to their state before injection.

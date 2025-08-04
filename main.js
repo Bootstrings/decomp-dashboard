@@ -1,7 +1,7 @@
 // main.js - Main process for the Electron application
 
 const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
-const path = require('path');
+const path =require('path');
 const fs = require('fs');
 const { exec, execSync } = require('child_process');
 const Store = require('electron-store');
@@ -207,7 +207,6 @@ ipcMain.handle('exec:command', (event, { command, cwd, env = {} }) => {
 
 // --- Settings Handlers ---
 ipcMain.handle('settings:get', async (event) => {
-    // This now returns both manually set and auto-detected paths
     return await resolveToolchainPaths(event);
 });
 
@@ -222,13 +221,12 @@ ipcMain.handle('paths:get', async () => {
 
 ipcMain.handle('paths:set', async (event, paths) => {
     const currentPaths = store.get('userPaths', {});
-    // Merge new paths with existing ones to avoid overwriting
     const newPaths = { ...currentPaths, ...paths };
     store.set('userPaths', newPaths);
     return { success: true };
 });
 
-// --- Filesystem Handlers (No changes below this line) ---
+// --- Filesystem Handlers ---
 ipcMain.handle('fs:exists', async (event, pathToCheck) => fs.existsSync(pathToCheck));
 ipcMain.handle('files:getAsmFiles', async (event, { projectPath, hideCompleted }) => {
     try {
@@ -288,6 +286,7 @@ ipcMain.handle('files:getAsmFiles', async (event, { projectPath, hideCompleted }
         return { error: error.message };
     }
 });
+
 ipcMain.handle('files:analyze', async (event, { projectPath, relativePath }) => {
     try {
         const meleePath = path.join(projectPath, 'melee');
@@ -330,8 +329,6 @@ ipcMain.handle('files:analyze', async (event, { projectPath, relativePath }) => 
             .filter(func => cContent.includes(func.name) || hContent.includes(func.name))
             .map(func => func.name);
         
-        // --- FIX IS HERE ---
-        // This regex now finds both <...> and "..." includes.
         const includesRegex = /#include\s*(<[^>]+>|"[^"]+")/g;
         const includes = [...cContent.matchAll(includesRegex)].map(m => m[0]).join('\n');
 
@@ -340,6 +337,7 @@ ipcMain.handle('files:analyze', async (event, { projectPath, relativePath }) => 
         return { error: error.message };
     }
 });
+
 ipcMain.handle('files:getFunctionAsm', async (event, { projectPath, relativePath, functionName }) => {
     try {
         const meleePath = path.join(projectPath, 'melee');
@@ -369,22 +367,110 @@ ipcMain.handle('files:getFunctionAsm', async (event, { projectPath, relativePath
         return { error: error.message };
     }
 });
+
+function replaceFunctionInContent(content, functionName, newCode) {
+    const funcStartRegex = new RegExp(`(?:void|int|char|float|double|struct\\s+\\w+\\s*\\*?)\\s+${functionName}\\s*\\([^)]*\\)`);
+    const match = content.match(funcStartRegex);
+
+    if (!match) {
+        return content.trim() + `\n\n${newCode}\n`;
+    }
+
+    const startIndex = match.index;
+    let openBraces = 0;
+    let endIndex = -1;
+
+    const startBraceIndex = content.indexOf('{', startIndex);
+    if (startBraceIndex === -1) {
+        return content.trim() + `\n\n${newCode}\n`;
+    }
+
+    for (let i = startBraceIndex; i < content.length; i++) {
+        if (content[i] === '{') openBraces++;
+        else if (content[i] === '}') openBraces--;
+        
+        if (openBraces === 0) {
+            endIndex = i;
+            break;
+        }
+    }
+
+    if (endIndex === -1) {
+        return content.trim() + `\n\n${newCode}\n`;
+    }
+
+    const before = content.substring(0, startIndex);
+    const after = content.substring(endIndex + 1);
+    
+    return before + newCode + after;
+}
+
+ipcMain.handle('files:revertChanges', async (event, { projectPath, relativePath }) => {
+    try {
+        const meleePath = path.join(projectPath, 'melee');
+        const cPath = path.join(meleePath, 'src', 'melee', relativePath.replace('.s', '.c'));
+        const hPath = path.join(meleePath, 'src', 'melee', relativePath.replace('.s', '.h'));
+
+        const options = { cwd: meleePath, shell: 'powershell.exe' };
+
+        if (fs.existsSync(cPath)) {
+            await executeAndLog(event, `git restore "${cPath}"`, options);
+        }
+        if (fs.existsSync(hPath)) {
+            await executeAndLog(event, `git restore "${hPath}"`, options);
+        }
+        
+        return { success: true };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+});
+
 ipcMain.handle('files:injectCode', async(event, { projectPath, relativePath, code }) => {
     try {
         const meleePath = path.join(projectPath, 'melee');
         const cPath = path.join(meleePath, 'src', 'melee', relativePath.replace('.s', '.c'));
         const hPath = path.join(meleePath, 'src', 'melee', relativePath.replace('.s', '.h'));
-        
-        fs.appendFileSync(cPath, `\n\n${code}\n`);
 
         const signatureMatch = code.match(/(.*{)/);
-        if (signatureMatch) {
-            const signature = signatureMatch[1].replace('{', ';').trim();
-            if (!fs.existsSync(hPath)) fs.writeFileSync(hPath, `\n${signature}\n`);
-            else fs.appendFileSync(hPath, `\n${signature}\n`);
+        if (!signatureMatch) return { success: false, error: 'Could not parse function signature from your code.' };
+        
+        const newSignature = signatureMatch[1].replace('{', ';').trim();
+        const nameMatch = newSignature.match(/\b(\w+)\s*\(/);
+        if (!nameMatch) return { success: false, error: 'Could not parse function name from your code.' };
+        
+        const functionName = nameMatch[1];
+
+        if (fs.existsSync(cPath)) {
+            let cContent = fs.readFileSync(cPath, 'utf-8');
+            let updatedCContent = replaceFunctionInContent(cContent, functionName, code);
+            fs.writeFileSync(cPath, updatedCContent);
+            event.sender.send('log:message', `Updated function ${functionName} in ${path.basename(cPath)}.`);
+        } else {
+            fs.writeFileSync(cPath, code + '\n');
+            event.sender.send('log:message', `Created ${path.basename(cPath)} with function ${functionName}.`);
         }
+
+        if (!fs.existsSync(hPath)) {
+            fs.writeFileSync(hPath, newSignature + '\n');
+            event.sender.send('log:message', `Created ${path.basename(hPath)} with signature for ${functionName}.`);
+        } else {
+            let hContent = fs.readFileSync(hPath, 'utf-8');
+            // UPDATED REGEX: Anchors to start of line (^), searches for the function name, and uses multiline flag (m).
+            const oldSignatureRegex = new RegExp(`^.*\\b${functionName}\\b\\s*\\([^)]*\\);`, 'gm');
+            
+            if (oldSignatureRegex.test(hContent)) {
+                hContent = hContent.replace(oldSignatureRegex, newSignature);
+                event.sender.send('log:message', `Updated signature for ${functionName} in ${path.basename(hPath)}.`);
+            } else {
+                hContent = hContent.trim() + `\n${newSignature}\n`;
+                event.sender.send('log:message', `Appended signature for ${functionName} to ${path.basename(hPath)}.`);
+            }
+            fs.writeFileSync(hPath, hContent);
+        }
+
         return { success: true };
     } catch (error) {
-        return { error: error.message };
+        return { success: false, error: error.message };
     }
 });
