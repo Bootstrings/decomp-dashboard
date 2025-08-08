@@ -2,14 +2,14 @@
 
 This project is an Electron-based desktop application designed to streamline the workflow for contributing to the `melee` game decompilation project. It serves as a helper tool that guides a developer through the entire process, from initial environment setup to local verification and final submission.
 
-The dashboard simplifies complex command-line tasks into a user-friendly graphical interface.
+The dashboard simplifies complex command-line tasks into a user-friendly graphical interface, featuring a unified single-page layout with persistent sidebar navigation for a fluid and modern user experience.
 
 **Core Features:**
 
-*   **Guided Setup:** Automates the process of cloning the `melee` repository, locating a `main.dol` file, configuring the project with `configure.py`, and running the initial `ninja` build.
+*   **Guided Setup & Self-Healing:** Automates cloning the `melee` repository, locating a `main.dol` file, configuring the project with `configure.py`, and running the initial `ninja` build. The process automatically verifies required toolchains.
 *   **Persistent Paths:** Remembers the user's selected Project Folder and `main.dol` path between sessions for convenience.
-*   **Toolchain Verification:** Automatically detects if Git and Python are installed and configured on the system's `PATH`. If `ninja` is missing, it is installed locally via `pip`. If `objdiff-cli` is missing, it is **automatically downloaded** into the project folder, ensuring a clean and self-contained environment.
-*   **Struct Inspector:** Automates struct and memory offset inspection. By parsing project headers, it can suggest C syntax (like `gobj->user_data`) for a given assembly memory access, accelerating the matching process.
+*   **Automatic Toolchain Management:** If `ninja` is missing, it is automatically installed via `pip`. If `objdiff-cli` is missing, it is automatically downloaded into the project folder, ensuring a clean and self-contained environment.
+*   **Struct Inspector:** Accelerates the matching process by parsing project headers to suggest C syntax (like `gobj->user_data`) for a given assembly memory access.
 *   **Verification Dashboard:** An integrated UI for `objdiff-cli`. Provides a project-wide, color-coded report of matching progress for every object file, with drill-down views for non-matching functions.
 *   **Integrated AI Copilot:** Utilizes Google's Gemini Pro via the `gcloud` CLI to provide intelligent C code refactoring suggestions. Given a non-matching function, the AI analyzes the target assembly and existing C code to propose changes that will lead to a perfect match.
 *   **Decompilation Helper:** For a selected function, it automatically extracts the relevant assembly code and C header context, ready to be copied into [decomp.me](https://decomp.me).
@@ -19,22 +19,21 @@ The dashboard simplifies complex command-line tasks into a user-friendly graphic
 
 ## FILE STRUCTURE
 
+The project has been refactored into a single-page application architecture for a more cohesive user experience and easier maintenance.
+
 ```
 decomp-dashboard/
 ├── assets/
 │   └── icon.png
 ├── src/
-│   ├── index.html
-│   ├── renderer.js
-│   ├── preload.js
-│   ├── objdiff.html
-│   ├── objdiff.js
-│   ├── refactor.html
-│   ├── refactor.js
-│   └── setup-handler.js
+│   ├── index.html         // The main and only HTML file for the UI
+│   ├── preload.js         // Secure bridge between the main and renderer processes
+│   ├── renderer.js        // Consolidated JavaScript for all UI views
+│   ├── setup-handler.js   // Backend logic for project setup and toolchain verification
+│   └── style.css          // Centralized CSS for all UI components
 ├── .gitignore
 ├── LICENSE
-├── main.js
+├── main.js                // Main Electron process, handles windows and backend IPC
 ├── package.json
 └── README.md
 ```
@@ -51,7 +50,7 @@ Follow these instructions to get a copy of the project up and running on your lo
 *   **Google Cloud CLI**: The AI Copilot feature requires `gcloud` to be installed and authenticated.
     *   [Install the Google Cloud CLI](https://cloud.google.com/sdk/docs/install).
     *   After installation, authenticate your user account by running: `gcloud auth application-default login`
-*   **Note on `ninja` & `objdiff-cli`**: You do not need to install `ninja` or `objdiff-cli` beforehand. If not found, they will be automatically installed/downloaded into your project directory.
+*   **Note on `ninja` & `objdiff-cli`**: You do not need to install `ninja` or `objdiff-cli` beforehand. The application will automatically install or download them if they are not found on your system's `PATH`.
 
 ### Installation
 
@@ -61,9 +60,10 @@ Follow these instructions to get a copy of the project up and running on your lo
     cd decomp-dashboard
     ```
 
-2.  Install the required npm packages:
+2.  Install the required npm packages. The `dotenv` package is used for managing Google Cloud credentials for the AI feature.
     ```sh
     npm install
+    npm install dotenv
     ```
 
 3.  Configure your environment variables for the AI Copilot. Create a file named `.env` in the project root and populate it according to the `ENVIRONMENT VARIABLES` section below.
@@ -104,8 +104,9 @@ All user-specific paths are managed by `electron-store` and saved automatically.
 *   **`electron`** (dev dependency): The core framework used to build this cross-platform desktop application.
 *   **`electron-store`**: Used to persistently store user settings like toolchain and project paths.
 *   **`electron-builder`** (dev dependency): A tool for packaging and distributing the Electron application.
+*   **`dotenv`**: Used to load environment variables from a `.env` file for development, specifically for Google Cloud credentials.
 *   **Node.js `child_process`**: Used to execute external command-line tools like `git`, `py`, `ninja`, `gcloud`, and `objdiff-cli`.
-*   **Node.js `fs` and `path`**: Used for all file system interactions, including parsing C header files.
+*   **Node.js `fs` and `path`**: Used for all file system interactions, including creating helper scripts and parsing C header files.
 
 ## SECURITY NOTES
 
@@ -126,4 +127,4 @@ This will generate a `dist/` folder containing the packaged application.
 
 ## TESTING
 
-This project does not yet have an automated test suite. Testing is currently performed manually by running the application and verifying its features, including the AI Copilot workflow.
+This project does not yet have an automated test suite. Testing is currently performed manually by running the application and verifying its features, including the setup and AI Copilot workflows.
