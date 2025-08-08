@@ -8,39 +8,50 @@ The dashboard simplifies complex command-line tasks into a user-friendly graphic
 
 *   **Guided Setup:** Automates the process of cloning the `melee` repository, locating a `main.dol` file, configuring the project with `configure.py`, and running the initial `ninja` build.
 *   **Persistent Paths:** Remembers the user's selected Project Folder and `main.dol` path between sessions for convenience.
-*   **Toolchain Verification:** Automatically detects if Git and Python are installed and configured on the system's `PATH`. The tool can also install `ninja` via pip if it's missing.
-*   **Manual Configuration:** Provides a settings page to manually specify paths for `git.exe`, `python.exe`, and `ninja.exe`, overriding auto-detection for non-standard environments. Found paths are displayed for user verification.
-*   **Reconnaissance View:** Scans the project's assembly files to identify "vacant" (un-decompiled) and "claimed" (decompiled) functions, helping users quickly find a target to work on.
+*   **Toolchain Verification:** Automatically detects if Git and Python are installed and configured on the system's `PATH`. If `ninja` is missing, it is installed locally via `pip`. If `objdiff-cli` is missing, it is **automatically downloaded** into the project folder, ensuring a clean and self-contained environment.
+*   **Struct Inspector:** Automates struct and memory offset inspection. By parsing project headers, it can suggest C syntax (like `gobj->user_data`) for a given assembly memory access, accelerating the matching process.
+*   **Verification Dashboard:** An integrated UI for `objdiff-cli`. Provides a project-wide, color-coded report of matching progress for every object file, with drill-down views for non-matching functions.
+*   **Integrated AI Copilot:** Utilizes Google's Gemini Pro via the `gcloud` CLI to provide intelligent C code refactoring suggestions. Given a non-matching function, the AI analyzes the target assembly and existing C code to propose changes that will lead to a perfect match.
 *   **Decompilation Helper:** For a selected function, it automatically extracts the relevant assembly code and C header context, ready to be copied into [decomp.me](https://decomp.me).
-*   **Intelligent Code Injection:** Allows users to paste their matched C code. The application intelligently finds and replaces the corresponding function stub in both the C source file and the header file, preventing common redeclaration errors.
-*   **One-Click Revert:** A dedicated button to revert any code injections for the currently selected file. This uses `git restore` to safely return the source files to their original, unmodified state.
-*   **Local Verification & Submission:** Provides one-click buttons to run `ninja` to verify a local build and to pre-fill a GitHub issue for submitting a matched function.
-*   **Quick Access Links:** Persistent icons on the dashboard provide one-click access to the Melee Decompilation GitHub repository and the decomp.me website.
+*   **Intelligent Code Injection:** Allows users to paste their matched C code. The application intelligently finds and replaces the corresponding function stub in both the C source file and the header file.
+*   **One-Click Revert:** A dedicated button to revert any code injections for the currently selected file using `git restore`.
+*   **Manual Configuration:** Provides a settings page to manually specify paths for `git.exe`, `python.exe`, `ninja.exe`, and `objdiff-cli.exe`.
 
 ## FILE STRUCTURE
 
 ```
 decomp-dashboard/
+├── assets/
+│   └── icon.png
 ├── src/
 │   ├── index.html
-│   └── preload.js
+│   ├── renderer.js
+│   ├── preload.js
+│   ├── objdiff.html
+│   ├── objdiff.js
+│   ├── refactor.html
+│   ├── refactor.js
+│   └── setup-handler.js
 ├── .gitignore
 ├── LICENSE
 ├── main.js
 ├── package.json
-├── package-lock.json
 └── README.md
 ```
 
 ## GETTING STARTED
 
-Follow these instructions to get a copy of the project up and running on your local machine for development and testing purposes.
+Follow these instructions to get a copy of the project up and running on your local machine.
 
 ### Prerequisites
 
 *   [Node.js](https://nodejs.org/) and npm
 *   [Git](https://git-scm.com/)
 *   [Python](https://www.python.org/)
+*   **Google Cloud CLI**: The AI Copilot feature requires `gcloud` to be installed and authenticated.
+    *   [Install the Google Cloud CLI](https://cloud.google.com/sdk/docs/install).
+    *   After installation, authenticate your user account by running: `gcloud auth application-default login`
+*   **Note on `ninja` & `objdiff-cli`**: You do not need to install `ninja` or `objdiff-cli` beforehand. If not found, they will be automatically installed/downloaded into your project directory.
 
 ### Installation
 
@@ -54,7 +65,8 @@ Follow these instructions to get a copy of the project up and running on your lo
     ```sh
     npm install
     ```
-    This will install all necessary dependencies listed in `package.json`.
+
+3.  Configure your environment variables for the AI Copilot. Create a file named `.env` in the project root and populate it according to the `ENVIRONMENT VARIABLES` section below.
 
 ### Running the Application
 
@@ -68,40 +80,50 @@ This will launch the Electron window and the application.
 
 ## ENVIRONMENT VARIABLES
 
-This application uses `electron-store` to persistently save user settings, eliminating the need for a `.env` file. Configuration is handled automatically and can be manually overridden via the application's Settings page.
+While the application is designed to be self-contained for end-users, development of the AI Copilot feature requires environment variables. Create a `.env` file in the root of the project by copying the example template below and filling in your project details.
+
+### `.env.example`
+```
+# Google Cloud Configuration for the AI Copilot
+# Your Google Cloud Project ID
+GCLOUD_PROJECT_ID=your-gcp-project-id
+# The location of your AI Platform resources (e.g., us-central1)
+GCLOUD_LOCATION=us-central1
+# The specific Gemini model to use
+GCLOUD_MODEL_ID=gemini-1.0-pro
+```
+
+### User Settings
+All user-specific paths are managed by `electron-store` and saved automatically.
+
+*   **Toolchain Paths**: The application auto-detects `git`, `python`, `ninja`, and `objdiff-cli`. These can be manually overridden on the Settings page.
+*   **Project Paths**: The last used Project Folder and `main.dol` path are saved for convenience.
 
 ## KEY PACKAGES
 
-*   **`electron`** (dev dependency): The core framework used to build this cross-platform desktop application. It must be in `devDependencies` to ensure it is not bundled into the final distributable application.
-*   **`electron-store@7`**: Used to persistently store user settings, such as manually configured paths for the toolchain and last-used project paths. Version 7 is used for compatibility with the project's CommonJS module system.
-*   **`electron-builder`** (dev dependency): A tool for packaging and distributing the Electron application as an executable file (e.g., `.exe`, `.dmg`).
-*   **Node.js `child_process`**: Used to execute external command-line tools like `git`, `py`, and `ninja`.
-*   **Node.js `fs` and `path`**: Used for all file system interactions.
+*   **`electron`** (dev dependency): The core framework used to build this cross-platform desktop application.
+*   **`electron-store`**: Used to persistently store user settings like toolchain and project paths.
+*   **`electron-builder`** (dev dependency): A tool for packaging and distributing the Electron application.
+*   **Node.js `child_process`**: Used to execute external command-line tools like `git`, `py`, `ninja`, `gcloud`, and `objdiff-cli`.
+*   **Node.js `fs` and `path`**: Used for all file system interactions, including parsing C header files.
 
 ## SECURITY NOTES
 
-Security is a primary consideration, especially in an application that interacts with the file system and executes shell commands.
-
-*   **Context Isolation**: The application is configured with `contextIsolation: true` and `nodeIntegration: false`. This is a critical security measure in Electron that ensures the renderer process (the UI) cannot directly access Node.js APIs.
-*   **Preload Script**: Communication between the UI and the backend is handled exclusively through a `preload.js` script, which uses `contextBridge` to securely expose specific backend functions to the UI.
-*   **Command Execution**: The application executes shell commands based on hardcoded templates. Any user-provided data (like file paths) is supplied via secure system dialogs, mitigating the risk of command injection attacks.
+*   **Context Isolation**: The application is configured with `contextIsolation: true` and `nodeIntegration: false` to ensure the renderer process cannot directly access Node.js APIs.
+*   **Preload Script**: Communication between the UI and the backend is handled exclusively through a `preload.js` script, which uses `contextBridge` to securely expose specific functions.
+*   **Command Execution**: The application executes shell commands based on hardcoded templates. Any user-provided data (like file paths) is supplied via secure system dialogs, mitigating the risk of command injection.
+*   **AI Command Execution**: The AI Copilot feature executes the `gcloud` command-line tool. The prompt sent to the AI is constructed programmatically and written to a temporary file. This avoids passing complex, user-editable code directly on the command line, reducing injection risks.
 
 ## DEPLOYMENT NOTES
 
 To package this Electron application into a distributable format (e.g., `.exe` for Windows), use the `build` script in `package.json`.
 
-1.  Ensure all dependencies are correctly installed by running `npm install`.
-2.  Confirm that the `electron` package is listed under `devDependencies` in `package.json`, not `dependencies`.
-3.  Run the build process:
-    ```sh
-    npm run build
-    ```
-    This will generate a `dist/` folder containing the packaged application. On Windows, you may need to run this command from a terminal with **Administrator privileges** to avoid errors related to creating symbolic links.
+```sh
+npm run build
+```
+
+This will generate a `dist/` folder containing the packaged application.
 
 ## TESTING
 
-Currently, no formal tests have been written for this project. For a production-ready application, you should consider adding both unit and end-to-end tests.
-
-Manual testing should be performed on core features after any change, including:
-*   Verifying that the "Inject Code" button correctly replaces function stubs in both `.c` and `.h` files.
-*   Confirming that the "Revert Changes" button restores the `.c` and `.h` files to their state before injection.
+This project does not yet have an automated test suite. Testing is currently performed manually by running the application and verifying its features, including the AI Copilot workflow.

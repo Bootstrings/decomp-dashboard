@@ -3,6 +3,9 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
+  // --- Navigation ---
+  navigate: (page) => ipcRenderer.send('navigate', page),
+
   // --- Dialogs ---
   selectDirectory: () => ipcRenderer.invoke('dialog:openDirectory'),
   selectFile: (options) => ipcRenderer.invoke('dialog:openFile', options),
@@ -21,22 +24,45 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // --- Logging from Main Process ---
   onLogMessage: (callback) => {
-    ipcRenderer.on('log:message', (_event, value) => callback(value));
+    const handler = (_event, value) => callback(value);
+    ipcRenderer.on('log:message', handler);
+    return () => ipcRenderer.removeListener('log:message', handler);
   },
   onLogError: (callback) => {
-    ipcRenderer.on('log:error', (_event, value) => callback(value));
+    const handler = (_event, value) => callback(value);
+    ipcRenderer.on('log:error', handler);
+    return () => ipcRenderer.removeListener('log:error', handler);
   },
   
   // --- External Links ---
   openExternal: (url) => ipcRenderer.send('shell:openExternal', url),
 
-  // --- File System Operations ---
-  fsExists: (pathToCheck) => ipcRenderer.invoke('fs:exists', pathToCheck),
+  // --- Decompilation & Analysis ---
+  structs: {
+    load: (projectPath) => ipcRenderer.invoke('structs:load', projectPath),
+    lookup: (offset) => ipcRenderer.invoke('structs:lookup', offset),
+  },
   getAsmFiles: (args) => ipcRenderer.invoke('files:getAsmFiles', args),
   analyzeFiles: (args) => ipcRenderer.invoke('files:analyze', args),
+  getFunctionCode: (args) => ipcRenderer.invoke('files:getFunctionCode', args),
   getFunctionAsm: (args) => ipcRenderer.invoke('files:getFunctionAsm', args),
   injectCode: (args) => ipcRenderer.invoke('files:injectCode', args),
-  revertChanges: (args) => ipcRenderer.invoke('files:revertChanges', args), // <-- ADDED THIS LINE
+  revertChanges: (args) => ipcRenderer.invoke('files:revertChanges', args),
+
+  // --- AI Copilot ---
+  ai: {
+    getSuggestion: (args) => ipcRenderer.invoke('ai:getRefactoringSuggestion', args),
+  },
+
+  // --- Refactor & Verify ---
+  refactor: {
+    verify: (args) => ipcRenderer.invoke('refactor:verify', args),
+  },
+
+  // --- Verification ---
+  objdiff: {
+    runReport: () => ipcRenderer.invoke('objdiff:run-report'),
+  },
 
   // --- Cleanup ---
   removeAllListeners: (channel) => ipcRenderer.removeAllListeners(channel),

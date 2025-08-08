@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Refactoring Assistant</title>
+    <style>
+        body { font-family: sans-serif; background-color: #1e1e1e; color: #d4d4d4; margin: 0; padding: 20px; padding-bottom: 40px; display: flex; flex-direction: column; height: 100vh; box-sizing: border-box; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .header h1 { margin: 0; font-size: 1.5em; }
+        .header .function-name { color: #4ec9b0; }
+        .header .actions button { background-color: #0e639c; color: white; border: none; padding: 10px 15px; cursor: pointer; border-radius: 4px; font-size: 1em; }
+        .header .actions button:hover { background-color: #1177bb; }
+        .header .actions button:disabled { background-color: #555; cursor: not-allowed; }
+        .container { display: flex; flex: 1; gap: 20px; overflow: hidden; }
+        .panel { background-color: #252526; border-radius: 5px; padding: 15px; display: flex; flex-direction: column; width: 33.33%; }
+        .panel h2 { margin-top: 0; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        .code-view, textarea { width: 100%; flex: 1; background: #1e1e1e; color: #d4d4d4; border: 1px solid #333; font-family: monospace; font-size: 14px; white-space: pre; overflow: auto; padding: 10px; box-sizing: border-box; resize: none; }
+        #ai-panel .reasoning { margin-bottom: 15px; background-color: #2d2d2d; padding: 10px; border-radius: 4px; white-space: pre-wrap; }
+        #ai-panel .diff-view { border-top: 1px solid #333; padding-top: 15px; }
+        #ai-panel .placeholder { text-align: center; color: #888; margin-top: 20px; }
+        #ai-panel .actions { margin-top: auto; display: flex; gap: 10px; }
+        .status-bar { position: fixed; bottom: 0; left: 0; width: 100%; background-color: #007acc; color: white; padding: 5px 20px; box-sizing: border-box; font-size: 0.9em; text-align: center; transition: background-color 0.3s; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Refactoring: <span id="function-name" class="function-name">Loading...</span></h1>
+        <div class="actions">
+            <button id="recompile-btn">Recompile & Verify</button>
+            <button id="back-btn">&larr; Back to Dashboard</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="panel">
+            <h2>Target Assembly</h2>
+            <pre id="asm-view" class="code-view">Loading assembly...</pre>
+        </div>
+        <div class="panel">
+            <h2>Your C Code</h2>
+            <textarea id="c-code-editor">Loading C code...</textarea>
+        </div>
+        <div id="ai-panel" class="panel">
+            <h2>AI Assistant</h2>
+            <button id="suggest-btn">✨ Suggest Refactoring</button>
+            <div id="ai-output">
+                <p class="placeholder">Click "Suggest Refactoring" to get an AI-powered suggestion.</p>
+            </div>
+            <div class="actions" style="display: none;">
+                <button id="accept-btn">Accept Suggestion</button>
+                <button id="dismiss-btn">Dismiss</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="status-bar" class="status-bar">Ready</div>
+
+    <script src="./refactor.js"></script>
+</body>
+</html>
